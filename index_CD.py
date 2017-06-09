@@ -39,13 +39,24 @@ class mala_CD_index:
                     # print i.select('tr > td:nth-of-type(5) > em')
 
                     publisher_replayer_inf=i.select('tr > td.by')
-                    publisherinf= publisher_replayer_inf[0].text.strip('\n').split('\n')
-
-                    replayerinf= publisher_replayer_inf[1].text.strip('\n').split('\n')
+                    publisherinf= publisher_replayer_inf[0].text.strip('\n').split('\n')#数组
 
 
+                    replayerinf= publisher_replayer_inf[1].text.strip('\n').split('\n')#数组
 
-                    hasPicture= i.select('tr > th.common > img')
+
+
+                    hasPicture= i.select('tr > th > img[alt=attach_img]')
+                    hasAttachment=i.select('tr > th > img[alt=attachment]')
+                    isFreshPost=i.select('tr > th > img[src="static/image/stamp/011.small.gif"]')
+                    hotValue=i.select(' tr > td.icn > a > img[src="static/image/common/hot_1.gif"]')
+                    if hotValue:
+                        print hotValue[0].get('title').replace(u'热度:','')#热度
+                    else:
+                        print 'None'
+                    print '---------------------------------------'
+                    print isFreshPost
+                    print hasAttachment
                     print hasPicture
 
 
