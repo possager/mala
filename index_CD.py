@@ -40,9 +40,17 @@ class mala_CD_index:
 
                     publisher_replayer_inf=i.select('tr > td.by')
                     publisherinf= publisher_replayer_inf[0].text.strip('\n').split('\n')#数组
+                    publishername=publisherinf[0]
+                    publishtime=publisherinf[1]
+
 
 
                     replayerinf= publisher_replayer_inf[1].text.strip('\n').split('\n')#数组
+                    replayertime=replayerinf[0]
+                    replayerhref=replayerinf[1]
+
+
+                    print publishername
 
 
 
