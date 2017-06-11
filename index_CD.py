@@ -2,8 +2,9 @@
 import requests
 import cookielib
 import MySQLdb
-from  bs4 import BeautifulSoup
-
+from bs4 import BeautifulSoup
+import time
+import random
 
 
 class mala_CD_index:
@@ -19,7 +20,6 @@ class mala_CD_index:
         session1.headers=self.headers
         cookie1=cookielib.LWPCookieJar()
         session1.cookies=cookie1
-        print '11'
         def getindex(url1):
             response1=session1.request(method='GET',url=url1)
             # response1.encod
@@ -27,54 +27,71 @@ class mala_CD_index:
             for i in datasoup.select('#threadlisttableid > tbody'):
                 try:
                     print '\n\n'
-                    print i.select('tr > th > a.s.xst')[0].text#title
-                    print i.select('tr > th > a.s.xst')[0].get('href')#href
-                    # print i.select('tr > td.by > cite > a')[0].text#username
-                    # print i.select('tr > td.by > cite > a')[0].get('href')#userhref
-                    # print i.select('tr > td.by > em > span')[0].text
-                    print i.select('tr > td.num > a')[0].text#replaynum
-                    print i.select('tr > td.num > em')[0].text#viewnum
-                    # print i.select('tr > td:nth-of-type(5) > cite > a')#lastviewername       #normalthread_14689291 > tr > td:nth-child(5) > cite
-                    # print i.select('tr > td:nth-of-type(5) > cite > a')  # lastviewername
-                    # print i.select('tr > td:nth-of-type(5) > em')
-
+                    title= i.select('tr > th > a.s.xst')[0].text.replace('"',"-").replace("'",'|')#title
+                    href= i.select('tr > th > a.s.xst')[0].get('href')#href
+                    replayernum= i.select('tr > td.num > a')[0].text#replaynum
+                    viewernum= i.select('tr > td.num > em')[0].text#viewnum
                     publisher_replayer_inf=i.select('tr > td.by')
+                    publisherhref=i.select('tr > td.by > cite > a')[0].get('href')
                     publisherinf= publisher_replayer_inf[0].text.strip('\n').split('\n')#数组
+
                     publishername=publisherinf[0]
                     publishtime=publisherinf[1]
-
-
-
                     replayerinf= publisher_replayer_inf[1].text.strip('\n').split('\n')#数组
-                    replayertime=replayerinf[0]
-                    replayerhref=replayerinf[1]
+                    replayername=replayerinf[0]#回复人员的名称
+                    replayertime=replayerinf[1]#回复的时间
 
+                    print replayername,'----name'
+                    print replayertime
 
-                    print publishername
-
+                    hasAttachmentnum=0
+                    hasPicturenum=0
+                    beenAgreednum=0
+                    isFreshPostnum=0
 
 
                     hasPicture= i.select('tr > th > img[alt=attach_img]')
                     hasAttachment=i.select('tr > th > img[alt=attachment]')
                     isFreshPost=i.select('tr > th > img[src="static/image/stamp/011.small.gif"]')
+                    beenAgreed=i.select('tr > th > img[alt=agree]')
                     hotValue=i.select(' tr > td.icn > a > img[src="static/image/common/hot_1.gif"]')
+
+                    if hasPicture:
+                        hasPicturenum=1
+                    if hasAttachment:
+                        hasAttachmentnum=1
+                    if isFreshPost:
+                        isFreshPostnum=1
+                    if beenAgreed:
+                        beenAgreednum=1
+
+                    hotValuenum=0
                     if hotValue:
-                        print hotValue[0].get('title').replace(u'热度:','')#热度
+                        hotValuenum= hotValue[0].get('title').replace(u'热度:','')#热度
                     else:
-                        print 'None'
+                        hotValuenum=0
                     print '---------------------------------------'
-                    print isFreshPost
-                    print hasAttachment
-                    print hasPicture
+                    sql_insert_cd='INSERT INTO index_CD (href,title,publishername,publishtime,publisherhref,viewernum,replayernum,lastviewername,lastviewtime,isFreshPost,hasAttachment,beenAgreed,hasPicture,hotValue)' \
+                                  'VALUE ("%s","%s","%s","%s","%s","%d","%d","%s","%s","%d","%d","%d","%d","%d")'%(href,title,publishername,publishtime,publisherhref,int(viewernum),int(replayernum),
+                                                                                                                   replayername,replayertime,isFreshPostnum,hasAttachmentnum,beenAgreednum,hasPicturenum,int(hotValuenum))
 
-
-
-
+                    print sql_insert_cd
+                    self.cursor.execute(sql_insert_cd)
+                    self.connect.commit()
 
                 except Exception as e:
                     print e
 
-        getindex(url1='http://cd.mala.cn/')
+            print response1.url
+            thispagenum=response1.url.split('-')[-1].split('.')[0]
+            thispagenum1=int(thispagenum)
+            if thispagenum1<500:
+                urlsplit=response1.url.split('-')
+                urlnext=urlsplit[0]+'-'+urlsplit[1]+'-'+str(thispagenum1+1)+'.html'
+                print urlnext
+                time.sleep(random.randint(2,5))
+                getindex(urlnext)
+        getindex(url1='http://cd.mala.cn/forum-70-1.html')
 
 
 
