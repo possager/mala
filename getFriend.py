@@ -40,11 +40,36 @@ class personalInfoGet:
             responsefriendinfo=session1.request(method='GET',url=urlfriendinfo1)
             datasoupfriendinfo=BeautifulSoup(responsefriendinfo.text,'lxml')
             for ii1 in datasoupfriendinfo.select('#ct > div.mn > div > div.bm_c > ul > li'):
-                print ii1.text
+                print ii1.select('h4 > a ')[0].get('title')#用户名
+                print ii1.select('h4 > a')[0].get('href')#用户的链接
+
+            nextpage=datasoupfriendinfo.select('#ct > div.mn > div > div.bm_c > div > div > a.nxt')
+            if nextpage:
+                nexturl1=nextpage[0].get('href')
+                nexturl=nexturl1.replace('&amp','').replace(';','&')
+                print nexturl
+                friendinfoGet(nexturl)
+
+
+        def liuyanban(urlliuyanban):#留言板处理
+            responseliuyanban=session1.request(method='GET',url=urlliuyanban)
+            datasoupliuyanban=BeautifulSoup(responseliuyanban.text,'lxml')
+            for iii1 in datasoupliuyanban.select('#comment_ul > dl.bbda.cl'):
+                # print iii1.select('dd.m.avt > a')[0].get('href')
+                print iii1.select('dt > a')[0].get('href')#留言人的链接
+                print iii1.select('dt > a')[0].text#留言人的名称
+                print iii1.select('dd[id]')[0].text#留言人的留言内容
+            print datasoupliuyanban
+            nextpage=datasoupliuyanban.select('div.pgs.cl.mtm > div.pg > a.nxt')#这里功能不能实现,因为网页返回里边没有对应的下一页的url,可能需要处理js,反正各个板块是分开的,将来再回来写这一块
+            if nextpage:
+                nexturl=nextpage[0].get('href')
+                print nexturl
+
 
 
         personalInfoget('http://home.mala.cn/home.php?mod=space&uid=752731')
-        # friendinfoGet('http://home.mala.cn/home.php?mod=space&uid=752731')
+        # liuyanban('http://home.mala.cn/home.php?mod=space&uid=752731')
+        friendinfoGet('http://home.mala.cn/home.php?mod=space&uid=752731')
 
 if __name__ == '__main__':
     thisclass=personalInfoGet()

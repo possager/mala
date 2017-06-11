@@ -71,7 +71,7 @@ class mala_CD_index:
                     else:
                         hotValuenum=0
                     print '---------------------------------------'
-                    sql_insert_cd='INSERT INTO index_CD (href,title,publishername,publishtime,publisherhref,viewernum,replayernum,lastviewername,lastviewtime,isFreshPost,hasAttachment,beenAgreed,hasPicture,hotValue)' \
+                    sql_insert_cd='INSERT INTO index_CD (href,title,publishername,publishtime,publisherhref,viewernum,replayernum,lastreplayername,lastreplaytime,isFreshPost,hasAttachment,beenAgreed,hasPicture,hotValue)' \
                                   'VALUE ("%s","%s","%s","%s","%s","%d","%d","%s","%s","%d","%d","%d","%d","%d")'%(href,title,publishername,publishtime,publisherhref,int(viewernum),int(replayernum),
                                                                                                                    replayername,replayertime,isFreshPostnum,hasAttachmentnum,beenAgreednum,hasPicturenum,int(hotValuenum))
 
@@ -91,7 +91,7 @@ class mala_CD_index:
                 print urlnext
                 time.sleep(random.randint(2,5))
                 getindex(urlnext)
-        getindex(url1='http://cd.mala.cn/forum-70-1.html')
+        getindex(url1='http://cd.mala.cn/forum-70-350.html')
 
 
 
