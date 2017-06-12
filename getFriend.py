@@ -5,28 +5,88 @@ import MySQLdb
 import time
 from bs4 import BeautifulSoup
 import random
+import threading
+import pymongo
 from multiprocessing import pool
+
+#mysql是个大坑
+
+
+
+
+threadlock=threading.Lock()
 
 class personalInfoGet:
     def __init__(self):
         self.connect = MySQLdb.connect(host='127.0.0.1', user='root', passwd='asd123456', db='mala', charset='utf8')
+        self.connect2=MySQLdb.connect(host='127.0.0.1', user='root', passwd='asd123456', db='proxy', charset='utf8')
+
         self.cursor = self.connect.cursor()
+        self.cursor2=self.connect2.cursor()
+
+        self.client=pymongo.MongoClient('localhost',27017)
+        self.proxyCOL=self.client['IpProxy2']
+        self.proxyDOC=self.proxyCOL['Ip_Live_mala']
+
+
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'
         }
 
     def personalInfoGetByOrder(self):
-        session1=requests.session()
-        cookie1=cookielib.LWPCookieJar()
-        session1.cookies=cookie1
-        session1.headers=session1.headers
+        # session1=requests.session()
+        # cookie1=cookielib.LWPCookieJar()
+        # session1.cookies=cookie1
+        # session1.headers=session1.headers
 
-        def personalInfoget(urluid):
-            response=session1.request(method='GET',url=urluid)
+
+        ################################################获取代理ip,放进列表中
+        # proxylist=[]
+        # sqlproxyget = 'SELECT * FROM proxy.mala_proxy_live WHERE errornum > 0'
+        # self.cursor2.execute(sqlproxyget)
+        # proxylistdata = self.cursor2.fetchall()
+        # for i in proxylistdata:
+        #     print i[0], '-------->', i[1]
+        #     dict1 = {'http': 'http://' + i[0] + ':' + i[1]}
+        #     proxylist.append(dict1)
+
+
+
+
+
+        def personalInfoget(urluid,session1):
+            try:
+                response=session1.request(method='GET',url=urluid)
+            except Exception as e:
+                print e
+                print session1.proxies
+                proxyip= session1.proxies['http'].replace('http://','').split(':')[0]
+                print proxyip
+                self.proxyDOC.update({'ip':proxyip},{'$inc':{'errornum':-1}})
+                return
+
             datasoup=BeautifulSoup(response.text,'lxml')
             numlist=[]
             owneruid=''
             owneruid1='111111111'
+
+            #后来发在try模块中的变量容易发生错误,因为try若被打断,里边声明变量的语句就不会被执行.所以将变量声明挪到这里.
+            visitorhref = ''
+            visitorname = ''
+            visitortime = ''
+            youxiangrenzheng=0
+            shipinrenzheng=1
+            ongjianfangwenliang=0
+            xingbie = 0
+            shengri = '2100-01-01 12:00'
+            chushengdi = ''
+            juzhudi = ''
+            zaixianshijian = 0
+            zhuceshijian = '2100-01-01 12:00'
+            zuihoufangwen = '2100-01-01 12:00'
+            shangcihuodongshijian = '2100-01-01 12:00'
+            shangcifabiaoshijian = '2100-01-01 12:00'
+
             try:
                 ownername = datasoup.select('div > div.hm > h2 > a')[0].text
                 owneruid1 = urluid.split('uid=')[1]
@@ -45,16 +105,15 @@ class personalInfoGet:
                     numbernum= int(number)
                     numlist.append(numbernum)
                 except Exception as e:
-                    print e
                     number=0
                     numlist.append(number)
             print numlist
 
 
 
-            visitorhref=''
-            visitorname=''
-            visitortime=''
+            # visitorhref=''
+            # visitorname=''
+            # visitortime=''
 
             ####################这里个人信息栏的信息获取
             try:
@@ -62,13 +121,13 @@ class personalInfoGet:
                 print urlgerenxinxi
                 responsegerenxinxi=session1.request(method='GET',url=urlgerenxinxi)
                 datasoupgerenxinxi=BeautifulSoup(responsegerenxinxi.text,'lxml')
-                youxiangrenzheng=0
-                shipinrenzheng=1
-                ongjianfangwenliang=0
-                xingbie = 0
-                shengri = '2100-1-1 12:00'
-                chushengdi = ''
-                juzhudi = ''
+                # youxiangrenzheng=0
+                # shipinrenzheng=1
+                # ongjianfangwenliang=0
+                # xingbie = 0
+                # shengri = '2100-1-1 12:00'
+                # chushengdi = ''
+                # juzhudi = ''
                 for i1j1 in datasoupgerenxinxi.select('div.mn > div > div.bm_c > div > div > ul.pf_l.cl.pbm.mbm > li'):
                     if u'未认证' in i1j1.text:
                         shipinrenzheng=0
@@ -96,11 +155,11 @@ class personalInfoGet:
                 yonghuzu=datasoupgerenxinxi.select(' div.mn > div > div.bm_c > div > div > ul > li > span > a')[0].text
                 print yonghuzu
 
-                zaixianshijian=0
-                zhuceshijian='2100-1-1 12:00'
-                zuihoufangwen='2100-1-1 12:00'
-                shangcihuodongshijian='2100-1-1 12:00'
-                shangcifabiaoshijian='2100-1-1 12:00'
+                # zaixianshijian=0
+                # zhuceshijian='2100-1-1 12:00'
+                # zuihoufangwen='2100-1-1 12:00'
+                # shangcihuodongshijian='2100-1-1 12:00'
+                # shangcifabiaoshijian='2100-1-1 12:00'
 
                 for i1j3 in datasoupgerenxinxi.select('#pbbs > li'):
                     if u'在线时间' in i1j3.text:
@@ -108,7 +167,8 @@ class personalInfoGet:
                     if u'注册时间' in i1j3.text:
                         zhuceshijian= i1j3.text.replace(u'注册时间','')
                     if u'最后访问' in i1j3.text:
-                        zuihoufangwen= i1j3.text.replace(u'最后访问','')
+                        if len(i1j3.text)>6:
+                            zuihoufangwen= i1j3.text.replace(u'最后访问','')
                     if u'上次活动时间' in i1j3.text:
                         shangcihuodongshijian= i1j3.text.replace(u'上次活动时间','')
                     if u'上次发表时间' in i1j3.text:
@@ -149,9 +209,24 @@ class personalInfoGet:
                 print e
 
 
-        def friendinfoGet(urlfriendinfo):
+        def friendinfoGet(urlfriendinfo,session1):
             urlfriendinfo1=urlfriendinfo+'&do=friend&view=me&from=space'
-            responsefriendinfo=session1.request(method='GET',url=urlfriendinfo1)
+            try:
+                responsefriendinfo=session1.request(method='GET',url=urlfriendinfo1)
+            except Exception as e:
+                print e
+                print session1.proxies
+                proxyip= session1.proxies['http'].replace('http://','').split(':')[0]
+                print proxyip
+                # sqldelete='UPDATE proxy.mala_proxy_live SET errornum=errornum-1 WHERE ip ="%s"'%(proxyip)
+                # print sqldelete
+                # self.cursor2.execute(sqldelete)
+                # self.cursor2.close()
+                # self.cursor2 = self.connect2.cursor()
+                # self.connect2.commit()
+                self.proxyDOC.update({'ip':proxyip},{'$inc':{'errornum':-1}})
+                return
+            # responsefriendinfo=session1.request(method='GET',url=urlfriendinfo1)
             datasoupfriendinfo=BeautifulSoup(responsefriendinfo.text,'lxml')
             try:
                 ownername=datasoupfriendinfo.select('div > div.hm > h2 > a')[0].text
@@ -171,6 +246,8 @@ class personalInfoGet:
 
                     sqlperson_friend='INSERT INTO mala.friendshipall (ownername,owneruid,friendname,frienduid) VALUE ("%s",%d,"%s",%d)'%(ownername,owneruid,friendname,frienduid)
                     self.cursor.execute(sqlperson_friend)
+                    # self.cursor.close()
+                    # self.cursor2 = self.connect2.cursor()
                     self.connect.commit()
                     print sqlperson_friend
                 except Exception as e:
@@ -187,7 +264,7 @@ class personalInfoGet:
                 friendinfoGet(nexturl)
 
 
-        def liuyanban(urlliuyanban):#留言板处理
+        def liuyanban(urlliuyanban,session1):#留言板处理
             responseliuyanban=session1.request(method='GET',url=urlliuyanban)
             datasoupliuyanban=BeautifulSoup(responseliuyanban.text,'lxml')
             for iii1 in datasoupliuyanban.select('#comment_ul > dl.bbda.cl'):
@@ -203,15 +280,50 @@ class personalInfoGet:
 
 
         def run(uid=870):
-            personalInfoget('http://home.mala.cn/home.php?mod=space&uid='+str(uid))
-            # liuyanban('http://home.mala.cn/home.php?mod=space&uid=752731')
-            friendinfoGet('http://home.mala.cn/home.php?mod=space&uid='+str(uid))
+            if threadlock.acquire():
+                session1 = requests.session()
+                cookie1 = cookielib.LWPCookieJar()
+                session1.cookies = cookie1
+                session1.headers = session1.headers
+                self.connect = MySQLdb.connect(host='127.0.0.1', user='root', passwd='asd123456', db='mala', charset='utf8')
+                self.cursor = self.connect.cursor()
 
-        for i in self.numyield():
-            run(i)
+                proxylist = []
 
+                for i in self.proxyDOC.find({'errornum':{'$gt':0}}):
+                    dict1 = {'http': 'http://' + i['ip'] + ':' + i['port']}
+                    proxylist.append(dict1)
+                print proxylist
+
+                session1.proxies=proxylist[random.randint(0,len(proxylist)-1)]
+                personalInfoget('http://home.mala.cn/home.php?mod=space&uid='+str(uid),session1=session1)
+                # liuyanban('http://home.mala.cn/home.php?mod=space&uid=752731')
+                friendinfoGet('http://home.mala.cn/home.php?mod=space&uid='+str(uid),session1=session1)
+                threadlock.release()
+
+
+        ###############################################在这个方法内部用threading来启动多线程
+        uid=4948
+        threadlist=[]
+        max_threads=10
+        while uid < 7305075 or threadlist:
+            for thread1 in threadlist:
+                if not thread1.is_alive():
+                    threadlist.remove(thread1)
+            while len(threadlist) < max_threads and uid < 7305075:
+                uid+=1
+                # urlinTread='http://home.mala.cn/home.php?mod=space&uid='+str(uid)
+                thread2=threading.Thread(target=run,args=(uid,))
+                thread2.setDaemon(True)
+
+                thread2.start()
+                threadlist.append(thread2)
+            time.sleep(5)
+
+
+        ################################################多线程threading
     def numyield(self):
-        i=870
+        i=4688
         while i < 7305075:
             yield i
             i+=1
