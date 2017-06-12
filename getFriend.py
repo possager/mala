@@ -65,18 +65,22 @@ class personalInfoGet:
                 youxiangrenzheng=0
                 shipinrenzheng=1
                 ongjianfangwenliang=0
+                xingbie = 0
+                shengri = '2100-1-1 12:00'
+                chushengdi = ''
+                juzhudi = ''
                 for i1j1 in datasoupgerenxinxi.select('div.mn > div > div.bm_c > div > div > ul.pf_l.cl.pbm.mbm > li'):
                     if u'未认证' in i1j1.text:
                         shipinrenzheng=0
                     if u'已验证' in i1j1.text:
                         youxiangrenzheng=1
                     if u'空间访问量' in i1j1.text:
-                        ongjianfangwenliang=int(i1j1.text.replace(u'空间访问量',''))
+                        try:
+                            ongjianfangwenliang=int(i1j1.text.replace(u'空间访问量',''))
+                        except Exception as e:
+                            print e
                 # print youxiangrenzheng,shipinrenzheng,ongjianfangwenliang
-                xingbie=0
-                shengri='2100-1-1 12:00'
-                chushengdi=''
-                juzhudi=''
+
                 for i1j2 in datasoupgerenxinxi.select('div.mn > div > div.bm_c > div > div > ul.pf_l.cl > li'):
                     if u'男' in i1j2.text:
                         xingbie=1
@@ -199,16 +203,18 @@ class personalInfoGet:
 
 
         def run(uid=870):
-            personalInfoget('http://home.mala.cn/home.php?mod=space&uid=752731')
+            personalInfoget('http://home.mala.cn/home.php?mod=space&uid='+str(uid))
             # liuyanban('http://home.mala.cn/home.php?mod=space&uid=752731')
-            friendinfoGet('http://home.mala.cn/home.php?mod=space&uid=752731')
+            friendinfoGet('http://home.mala.cn/home.php?mod=space&uid='+str(uid))
 
-        run()
+        for i in self.numyield():
+            run(i)
 
     def numyield(self):
-        i=0
+        i=870
         while i < 7305075:
             yield i
+            i+=1
 
 if __name__ == '__main__':
     thisclass=personalInfoGet()
