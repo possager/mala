@@ -14,6 +14,9 @@ class mala_CD_index:
         self.headers={
             'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'
         }
+        self.duplicate_key_num=0
+        self.threshold=100
+
 
     def index_get(self):
         session1=requests.session()
@@ -21,8 +24,8 @@ class mala_CD_index:
         cookie1=cookielib.LWPCookieJar()
         session1.cookies=cookie1
 
-        duplicate_key_num=1
-        threshold=100
+        # duplicate_key_num=1
+        # threshold=100
 
         def getindex(url1):
             response1=session1.request(method='GET',url=url1)
@@ -84,14 +87,14 @@ class mala_CD_index:
                         self.cursor.execute(sql_insert_cd)
                         self.connect.commit()
                     except Exception as e:
-                        duplicate_key_num=duplicate_key_num+1
+                        self.duplicate_key_num+=1
                         print e
 
 
                 except Exception as e:
                     print e
 
-            if duplicate_key_num > threshold:
+            if self.duplicate_key_num > self.threshold:
                 print '重复过多,策略性停止'
                 return
 
@@ -104,7 +107,7 @@ class mala_CD_index:
                 print urlnext
                 time.sleep(random.randint(2,5))
                 getindex(urlnext)
-        getindex(url1='http://cd.mala.cn/forum-70-3.html')
+        getindex(url1='http://cd.mala.cn/forum-70-215.html')
 
 
 
