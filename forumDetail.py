@@ -1,3 +1,4 @@
+#_*_coding:utf-8_*_
 import requests
 import cookielib
 from bs4 import BeautifulSoup
@@ -16,13 +17,15 @@ class malaDetailGet:
 
 
     def detailget(self):
-        # threadlock = threading.Lock()
+        threadlock = threading.Lock()
 
         def get(url1,session1,cursor1,connect1,cursor2,connect2):
-            session1=requests.session()
+            # session1=requests.session()
+            print url1
             try:
                 response=session1.request(method='GET',url=url1)
                 pagenumstr=url1.split('thread-')[1].split('-')[1]
+                threadnum=int(url1.split('thread-')[1].split('-')[0])
                 if int(pagenumstr)==1:
                     sql_Update_dealed='UPDATE mala.index_CD set dealed=1 where href="%s"'%(url1)
                     cursor1.execute(sql_Update_dealed)
@@ -38,16 +41,16 @@ class malaDetailGet:
             floor = None
             content = None
 
-            for i in datasoup.select('#postlist > div'):
+            for element in datasoup.select('#postlist > div'):
                 try:
-                    if i.select('div.pi > div > a'):
-                        publishername = i.select('div.pi > div > a')[0].text#很奇怪一个网站的帖子某个元素会在两个地方出现
+                    if element.select('div.pi > div > a'):
+                        publishername = element.select('div.pi > div > a')[0].text#很奇怪一个网站的帖子某个元素会在两个地方出现
                         try:
-                            publisherhref = i.select('div.pi > div > a')[0].get('href')
+                            publisherhref = element.select('div.pi > div > a')[0].get('href')
                         except Exception as e:
                             publisherhref = None
                     else:
-                        publishername = i.select('div.pi > a > em')[0].text
+                        publishername = element.select('div.pi > a > em')[0].text
                         publisherhref = None
 
                 except Exception as e:
@@ -58,20 +61,23 @@ class malaDetailGet:
                 print publishername
                 print publisherhref
                 try:
+                    # print element.select('td.plc > div.pi > div.pti > div.authi > em')
                     publishtime = \
-                    i.select('tbody > tr > td.plc > div.pi > div > div.authi > em')[0].text.split(u'发表于 ')[1].replace(
+                        element.select('td.plc > div.pi > div.pti > div.authi > em')[0].text.replace(u'发表于 ','').replace(
                         '\n', '').lstrip(' ').rstrip(
                         ' ')  # pid68569410 > tbody > tr:nth-child(1) > td.plc > div.pi > div > div.authi
+                    # pid44952952 > tbody > tr:nth-child(1) > td.plc > div.pi > div.pti > div.authi
                     print publishtime
-
-                    content = i.select('tbody > tr > td.plc > div.pct > div > div.t_fsz > table > tbody > tr')[
+                    # pid45293103 > tbody > tr:nth-child(1) > td.plc > div.pct > div > div.pcbs > table > tbody > tr
+                    print element.select('td.plc > div.pct > div > div ')
+                    content = element.select('td > div > div > div > table > tbody > tr')[
                         0].text.decode('utf-8').encode('utf-8').replace('"', '-')
                     print content
-                    floor = i.select('tbody > tr > td.plc > div.pi > strong > a > em')[0].text
+                    floor = element.select('td.plc > div.pi > strong > a > em')[0].text
                     print floor
 
-                    sql2 = 'INSERT INTO mala. (publishername,publisherhref,publishertime,content,floor) VALUE ("%s","%s","%s","%s","%s")' % (
-                    publishername, publisherhref, publishtime, content, floor)
+                    sql2 = 'INSERT INTO mala.forumdetail (publishername,publisherhref,publishertime,content,floor,ownerthread) VALUE ("%s","%s","%s","%s","%s",%d)' % (
+                    publishername, publisherhref, publishtime, content, floor,threadnum)
                     print sql2
                     self.cursor.execute(sql2)
                     self.connect.commit()
@@ -92,6 +98,7 @@ class malaDetailGet:
 
 
         def run(url1):
+            threadlock.acquire()
             cookie1=cookielib.LWPCookieJar()
             session1=requests.session()
             session1.cookies=cookie1
@@ -115,10 +122,10 @@ class malaDetailGet:
                 proxylist.append(dict1)
 
             session1.proxies = proxylist[random.randint(0, len(proxylist) - 1)]
-            # threadlock.release()
 
 
-            # get(url1=url1,session1=session1,cursor1=cursor1,connect1=connect1,cursor2=cursor2,connect2=connect2)
+            get(url1=url1,session1=session1,cursor1=cursor1,connect1=connect1,cursor2=cursor2,connect2=connect2)
+            threadlock.release()
 
         def begain():
             threadlist=[]
