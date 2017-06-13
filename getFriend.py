@@ -54,15 +54,25 @@ class personalInfoGet:
 
 
 
-        def personalInfoget(urluid,session1):
+        def personalInfoget(urluid,session1,connect1,cursor1,connect2,cursor2):
             try:
                 response=session1.request(method='GET',url=urluid)
+                sqlproxy_success='UPDATE proxy.mala_proxy_live SET usednum = usednum+1 WHERE ip ="%s"'%(session1.proxies['http'].replace('http://','').split(':')[0])
+                cursor2.execute(sqlproxy_success)
+                connect2.commit()
             except Exception as e:
                 print e
-                print session1.proxies
+                # print session1.proxies
                 proxyip= session1.proxies['http'].replace('http://','').split(':')[0]
-                print proxyip
-                self.proxyDOC.update({'ip':proxyip},{'$inc':{'errornum':-1}})
+                # print proxyip
+                # self.proxyDOC.update({'ip':proxyip},{'$inc':{'errornum':-1}})
+
+
+                sqldelete='UPDATE proxy.mala_proxy_live SET errornum=errornum-1 WHERE ip ="%s"'%(proxyip)
+                print sqldelete
+                cursor2.execute(sqldelete)
+                connect2.commit()
+
                 return
 
             datasoup=BeautifulSoup(response.text,'lxml')
@@ -188,8 +198,8 @@ class personalInfoGet:
                 try:
                     sql_visitor='INSERT INTO mala.visitor (ownername,owneruid,visitorname,visitoruid,visittime) VALUE ("%s",%d,"%s",%d,"%s")'%(ownername,owneruid,visitorname,visitoruid,visitortime)
                     print sql_visitor
-                    self.cursor.execute(sql_visitor)
-                    self.connect.commit()
+                    cursor1.execute(sql_visitor)
+                    connect1.commit()
                 except Exception as e:
                     print e
 
@@ -203,28 +213,33 @@ class personalInfoGet:
                     ongjianfangwenliang,youxiangrenzheng,shipinrenzheng,juzhudi,chushengdi,shangcifabiaoshijian,shangcihuodongshijian,zuihoufangwen,zhuceshijian,zaixianshijian,shengri,xingbie
                 )
                 print sqlperson
-                self.cursor.execute(sqlperson)
-                self.connect.commit()
+                cursor1.execute(sqlperson)
+                connect1.commit()
             except Exception as e:
                 print e
 
 
-        def friendinfoGet(urlfriendinfo,session1):
+        def friendinfoGet(urlfriendinfo,session1,connect1,cursor1,connect2,cursor2):
             urlfriendinfo1=urlfriendinfo+'&do=friend&view=me&from=space'
             try:
                 responsefriendinfo=session1.request(method='GET',url=urlfriendinfo1)
+                sqlproxy_success = 'UPDATE proxy.mala_proxy_live SET usednum = usednum+1 WHERE ip ="%s"' % (
+                session1.proxies['http'].replace('http://', '').split(':')[0])
+                cursor2.execute(sqlproxy_success)
+                print sqlproxy_success
+                connect2.commit()
             except Exception as e:
                 print e
-                print session1.proxies
+                # print session1.proxies
                 proxyip= session1.proxies['http'].replace('http://','').split(':')[0]
-                print proxyip
-                # sqldelete='UPDATE proxy.mala_proxy_live SET errornum=errornum-1 WHERE ip ="%s"'%(proxyip)
-                # print sqldelete
-                # self.cursor2.execute(sqldelete)
-                # self.cursor2.close()
-                # self.cursor2 = self.connect2.cursor()
-                # self.connect2.commit()
-                self.proxyDOC.update({'ip':proxyip},{'$inc':{'errornum':-1}})
+                # print proxyip
+
+                sqldelete='UPDATE proxy.mala_proxy_live SET errornum=errornum-1 WHERE ip ="%s"'%(proxyip)
+                print sqldelete
+                cursor2.execute(sqldelete)
+                connect2.commit()
+
+                # self.proxyDOC.update({'ip':proxyip},{'$inc':{'errornum':-1}})
                 return
             # responsefriendinfo=session1.request(method='GET',url=urlfriendinfo1)
             datasoupfriendinfo=BeautifulSoup(responsefriendinfo.text,'lxml')
@@ -245,10 +260,10 @@ class personalInfoGet:
 
 
                     sqlperson_friend='INSERT INTO mala.friendshipall (ownername,owneruid,friendname,frienduid) VALUE ("%s",%d,"%s",%d)'%(ownername,owneruid,friendname,frienduid)
-                    self.cursor.execute(sqlperson_friend)
+                    cursor1.execute(sqlperson_friend)
                     # self.cursor.close()
                     # self.cursor2 = self.connect2.cursor()
-                    self.connect.commit()
+                    connect1.commit()
                     print sqlperson_friend
                 except Exception as e:
                     print e
@@ -280,32 +295,47 @@ class personalInfoGet:
 
 
         def run(uid=870):
-            if threadlock.acquire():
-                session1 = requests.session()
-                cookie1 = cookielib.LWPCookieJar()
-                session1.cookies = cookie1
-                session1.headers = session1.headers
-                self.connect = MySQLdb.connect(host='127.0.0.1', user='root', passwd='asd123456', db='mala', charset='utf8')
-                self.cursor = self.connect.cursor()
 
-                proxylist = []
+            session1 = requests.session()
+            cookie1 = cookielib.LWPCookieJar()
+            session1.cookies = cookie1
+            session1.headers = session1.headers
+            connect1 = MySQLdb.connect(host='127.0.0.1', user='root', passwd='asd123456', db='mala', charset='utf8')
+            cursor1 = connect1.cursor()
 
-                for i in self.proxyDOC.find({'errornum':{'$gt':0}}):
-                    dict1 = {'http': 'http://' + i['ip'] + ':' + i['port']}
-                    proxylist.append(dict1)
-                print proxylist
+            connect2=MySQLdb.connect(host='127.0.0.1', user='root', passwd='asd123456', db='proxy', charset='utf8')
+            cursor2=connect2.cursor()
 
-                session1.proxies=proxylist[random.randint(0,len(proxylist)-1)]
-                personalInfoget('http://home.mala.cn/home.php?mod=space&uid='+str(uid),session1=session1)
-                # liuyanban('http://home.mala.cn/home.php?mod=space&uid=752731')
-                friendinfoGet('http://home.mala.cn/home.php?mod=space&uid='+str(uid),session1=session1)
-                threadlock.release()
+            sqlproxy_select='SELECT * FROM proxy.mala_proxy_live WHERE errornum > 0'
+            cursor1.execute(sqlproxy_select)
+            connect1.commit()
+            proxydata=cursor1.fetchall()
+
+
+            proxylist = []
+            #
+            # for i in self.proxyDOC.find({'errornum':{'$gt':0}}):
+            #     dict1 = {'http': 'http://' + i['ip'] + ':' + i['port']}
+            #     proxylist.append(dict1)
+            # print proxylist
+            for i in proxydata:
+                dict1={
+                    'http':'http://'+i[0]+':'+i[1]
+                }
+                proxylist.append(dict1)
+
+
+            session1.proxies=proxylist[random.randint(0,len(proxylist)-1)]
+            personalInfoget('http://home.mala.cn/home.php?mod=space&uid='+str(uid),session1=session1,connect1=connect1,cursor1=cursor1,connect2=connect2,cursor2=cursor2)
+            # liuyanban('http://home.mala.cn/home.php?mod=space&uid=752731')
+            friendinfoGet('http://home.mala.cn/home.php?mod=space&uid='+str(uid),session1=session1,connect1=connect1,cursor1=cursor1,connect2=connect2,cursor2=cursor2)
+
 
 
         ###############################################在这个方法内部用threading来启动多线程
-        uid=4948
+        uid=40481
         threadlist=[]
-        max_threads=10
+        max_threads=30
         while uid < 7305075 or threadlist:
             for thread1 in threadlist:
                 if not thread1.is_alive():

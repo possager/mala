@@ -20,6 +20,10 @@ class mala_CD_index:
         session1.headers=self.headers
         cookie1=cookielib.LWPCookieJar()
         session1.cookies=cookie1
+
+        duplicate_key_num=1
+        threshold=100
+
         def getindex(url1):
             response1=session1.request(method='GET',url=url1)
             # response1.encod
@@ -75,12 +79,21 @@ class mala_CD_index:
                                   'VALUE ("%s","%s","%s","%s","%s","%d","%d","%s","%s","%d","%d","%d","%d","%d")'%(href,title,publishername,publishtime,publisherhref,int(viewernum),int(replayernum),
                                                                                                                    replayername,replayertime,isFreshPostnum,hasAttachmentnum,beenAgreednum,hasPicturenum,int(hotValuenum))
 
-                    print sql_insert_cd
-                    self.cursor.execute(sql_insert_cd)
-                    self.connect.commit()
+                    try:
+                        print sql_insert_cd
+                        self.cursor.execute(sql_insert_cd)
+                        self.connect.commit()
+                    except Exception as e:
+                        duplicate_key_num=duplicate_key_num+1
+                        print e
+
 
                 except Exception as e:
                     print e
+
+            if duplicate_key_num > threshold:
+                print '重复过多,策略性停止'
+                return
 
             print response1.url
             thispagenum=response1.url.split('-')[-1].split('.')[0]
@@ -91,7 +104,7 @@ class mala_CD_index:
                 print urlnext
                 time.sleep(random.randint(2,5))
                 getindex(urlnext)
-        getindex(url1='http://cd.mala.cn/forum-70-350.html')
+        getindex(url1='http://cd.mala.cn/forum-70-3.html')
 
 
 
