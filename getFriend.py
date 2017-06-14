@@ -24,9 +24,9 @@ class personalInfoGet:
         self.cursor = self.connect.cursor()
         self.cursor2=self.connect2.cursor()
 
-        self.client=pymongo.MongoClient('localhost',27017)
-        self.proxyCOL=self.client['IpProxy2']
-        self.proxyDOC=self.proxyCOL['Ip_Live_mala']
+        # self.client=pymongo.MongoClient('localhost',27017)
+        # self.proxyCOL=self.client['IpProxy2']
+        # self.proxyDOC=self.proxyCOL['Ip_Live_mala']
 
 
         self.headers = {
@@ -333,7 +333,7 @@ class personalInfoGet:
 
 
         ###############################################在这个方法内部用threading来启动多线程
-        uid=40481
+        uid=89358
         threadlist=[]
         max_threads=30
         while uid < 7305075 or threadlist:

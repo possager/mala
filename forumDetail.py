@@ -63,13 +63,16 @@ class malaDetailGet:
                 try:
                     # print element.select('td.plc > div.pi > div.pti > div.authi > em')
                     publishtime = \
-                        element.select('td.plc > div.pi > div.pti > div.authi > em')[0].text.replace(u'发表于 ','').replace(
+                        element.select('td.plc > div.pi > div > div.authi > em')[0].text.replace(u'发表于 ','').replace(
                         '\n', '').lstrip(' ').rstrip(' ')
                     print publishtime
-                    print element.select(' td.plc > div.pct > div > div > table > tr > td')[0].text
-                    content = element.select(' td.plc > div.pct > div > div > table > tr > td ')[
+                    try:
+                        print element.select(' td.plc > div.pct > div > div > table > tr > td')[0].text
+                        content = element.select(' td.plc > div.pct > div > div > table > tr > td ')[
                         0].text.replace('"', '-').replace('\n', ' ')
-                    print content
+                        print content
+                    except Exception as e:
+                        content='抓取内容时出错,丫蛋的内容老是抓取失败,有毛病'
                     floor = element.select('td.plc > div.pi > strong > a > em')[0].text
                     print floor
 
