@@ -13,17 +13,17 @@ class malaDetailGet:
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'
         }
-        self.threshold=1
+        self.threshold=10
 
 
     def detailget(self):
-        threadlock = threading.Lock()
+        # threadlock = threading.Lock()
 
         def get(url1,session1,cursor1,connect1,cursor2,connect2):
-            # session1=requests.session()
             print url1
             try:
                 response=session1.request(method='GET',url=url1)
+                response.encoding='gbk'
                 pagenumstr=url1.split('thread-')[1].split('-')[1]
                 threadnum=int(url1.split('thread-')[1].split('-')[0])
                 if int(pagenumstr)==1:
@@ -64,14 +64,11 @@ class malaDetailGet:
                     # print element.select('td.plc > div.pi > div.pti > div.authi > em')
                     publishtime = \
                         element.select('td.plc > div.pi > div.pti > div.authi > em')[0].text.replace(u'发表于 ','').replace(
-                        '\n', '').lstrip(' ').rstrip(
-                        ' ')  # pid68569410 > tbody > tr:nth-child(1) > td.plc > div.pi > div > div.authi
-                    # pid44952952 > tbody > tr:nth-child(1) > td.plc > div.pi > div.pti > div.authi
+                        '\n', '').lstrip(' ').rstrip(' ')
                     print publishtime
-                    # pid45293103 > tbody > tr:nth-child(1) > td.plc > div.pct > div > div.pcbs > table > tbody > tr
-                    print element.select('td.plc > div.pct > div > div ')
-                    content = element.select('td > div > div > div > table > tbody > tr')[
-                        0].text.decode('utf-8').encode('utf-8').replace('"', '-')
+                    print element.select(' td.plc > div.pct > div > div > table > tr > td')[0].text
+                    content = element.select(' td.plc > div.pct > div > div > table > tr > td ')[
+                        0].text.replace('"', '-').replace('\n', ' ')
                     print content
                     floor = element.select('td.plc > div.pi > strong > a > em')[0].text
                     print floor
@@ -79,9 +76,8 @@ class malaDetailGet:
                     sql2 = 'INSERT INTO mala.forumdetail (publishername,publisherhref,publishertime,content,floor,ownerthread) VALUE ("%s","%s","%s","%s","%s",%d)' % (
                     publishername, publisherhref, publishtime, content, floor,threadnum)
                     print sql2
-                    self.cursor.execute(sql2)
-                    self.connect.commit()
-
+                    cursor1.execute(sql2)
+                    connect1.commit()
                 except Exception as e:
                     print e
 
@@ -98,7 +94,7 @@ class malaDetailGet:
 
 
         def run(url1):
-            threadlock.acquire()
+            # threadlock.acquire()
             cookie1=cookielib.LWPCookieJar()
             session1=requests.session()
             session1.cookies=cookie1
@@ -125,22 +121,25 @@ class malaDetailGet:
 
 
             get(url1=url1,session1=session1,cursor1=cursor1,connect1=connect1,cursor2=cursor2,connect2=connect2)
-            threadlock.release()
+            # threadlock.release()
 
         def begain():
-            threadlist=[]
+            threadlistInBegain=[]
             urllist=urlGet()
 
-            while threadlist or urllist:
-                for thread1 in threadlist:
+            while threadlistInBegain or urllist:
+                for thread1 in threadlistInBegain:
                     if not thread1.is_alive():
-                        threadlist.remove(thread1)
-                while threadlist < self.threshold or urllist:
+                        threadlistInBegain.remove(thread1)
+                        print 'debug1'
+                    print 'debug2'
+                while len(threadlistInBegain) < self.threshold and urllist:
                     url_ToBe_use=urllist.pop()
                     thread2=threading.Thread(target=run,args=(url_ToBe_use,))
                     thread2.setDaemon(True)
                     thread2.start()
-                    threadlist.append(thread2)
+                    threadlistInBegain.append(thread2)
+                time.sleep(5)
 
         def urlGet():
             sqlindex = 'SELECT href FROM mala.index_CD WHERE dealed=0'
@@ -149,7 +148,7 @@ class malaDetailGet:
             cursor_Url.execute(sqlindex)
             dataurl = cursor_Url.fetchall()
             urllist=[]
-            for i in dataurl[:10]:
+            for i in dataurl:
                 urllist.append(i[0])
             return urllist
 
